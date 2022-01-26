@@ -1,18 +1,50 @@
 import { Avatar } from "@material-ui/core";
+import { addDoc, collection, onSnapshot } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { db } from "../../firebase/firebase";
 import "./SidebarChat.css";
 
-const SidebarChat = ({ addNewChat }) => {
-  const [seed, setSeed] = useState("");
+const SidebarChat = ({ addNewChat, room }) => {
+  const navigate = useNavigate();
+  const [lastMessage, setLastMessage] = useState("");
   useEffect(() => {
-    setSeed(Math.ceil(Math.random() * 1000));
-  }, []);
+    let unsubscribeMessage;
+    if (room?.id) {
+      unsubscribeMessage = onSnapshot(
+        collection(db, "rooms", `${room.id}`, "messages"),
+        (snapShot) => {
+          const messageData = snapShot.docs.map((doc) => {
+            return {
+              id: doc.id,
+              ...doc.data(),
+            };
+          });
 
-  const createChat = () => {
+          const lastMes = messageData.sort(function (a, b) {
+            return a.timestamp - b.timestamp;
+          });
+
+          if (!!lastMes.length) {
+            setLastMessage(lastMes[lastMes.length - 1].content);
+          }
+        }
+      );
+    }
+
+    return () => {
+      if (unsubscribeMessage) {
+        unsubscribeMessage();
+      }
+    };
+  }, [room]);
+  const createChat = async () => {
     const roomName = prompt("Please enter name for chat");
 
     if (roomName) {
-      //do something
+      await addDoc(collection(db, "rooms"), {
+        name: roomName,
+      });
     }
   };
 
@@ -24,12 +56,18 @@ const SidebarChat = ({ addNewChat }) => {
     );
   }
 
+  const handleChange = () => {
+    if (!addNewChat) {
+      navigate(`/room/${room.id}`);
+    }
+  };
+
   return (
-    <div className="sidebarChat">
-      <Avatar src={`https://avatars.dicebear.com/api/human/${seed}.svg`} />
+    <div className="sidebarChat" onClick={handleChange}>
+      <Avatar src={`https://i.pravatar.cc/150?u=${room.id}.com`} />
       <div className="sidebarChat__info">
-        <h2>Room name</h2>
-        <p>Last message...</p>
+        <h2>{room.name}</h2>
+        <p>{lastMessage}</p>
       </div>
     </div>
   );

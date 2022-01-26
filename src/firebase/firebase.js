@@ -1,8 +1,6 @@
-import firebase from "firebase";
 import { initializeApp } from "firebase/app";
-import "firebase/auth";
-import "firebase/app";
-import "firebase/database";
+import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,12 +13,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-
 const app = initializeApp(firebaseConfig);
 
-const db = firebase.firestore();
-const auth = firebase.auth();
+const db = getFirestore(app);
 
-const provider = new firebase.auth.GoogleAuthProvider();
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: "select_account",
+});
 
-export { auth, db, provider };
+export { db, auth, provider };
